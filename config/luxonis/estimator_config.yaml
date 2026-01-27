@@ -63,7 +63,7 @@ filepath_std: "/tmp/ov_estimate_std.txt"
 filepath_gt: "/tmp/ov_groundtruth.txt"
 
 use_klt: true
-num_pts: 200
+num_pts: 350
 fast_threshold: 30
 grid_x: 5
 grid_y: 5
