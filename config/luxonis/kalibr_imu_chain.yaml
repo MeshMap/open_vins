@@ -10,7 +10,7 @@ imu0:
   accelerometer_random_walk: 3e-05
   gyroscope_noise_density: 0.00015
   gyroscope_random_walk: 3e-06
-  rostopic: /depthai_cam/imu/data
+  rostopic: /imu/data
   time_offset: 5
   update_rate: 100
   model: "kalibr"
