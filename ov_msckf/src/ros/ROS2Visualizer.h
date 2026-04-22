@@ -44,6 +44,7 @@
 #include <tf2/transform_datatypes.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.hpp>
+#include "std_srvs/srv/trigger.hpp"
 
 #include <atomic>
 #include <fstream>
@@ -206,6 +207,27 @@ protected:
   // Files and if we should save total state
   bool save_total_state = false;
   std::ofstream of_state_est, of_state_std, of_state_gt;
+
+  std::atomic<bool> app_running_{false};
+  bool app_started_once_{false};
+  std::mutex app_control_mtx_;
+
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_start_;
+  // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_stop_;
+  // rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr srv_reset_;
+
+  void callback_start_srv(
+      const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+  // void callback_stop_srv(
+  //     const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+  //     std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+  // void callback_reset_srv(
+  //     const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+  //     std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
 };
 
 } // namespace ov_msckf

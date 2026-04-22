@@ -48,18 +48,22 @@ using namespace ov_type;
 using namespace ov_msckf;
 
 VioManager::VioManager(VioManagerOptions &params_) : thread_init_running(false), thread_init_success(false) {
+  this->params = params_;
+  params.print_and_load_estimator();
+  params.print_and_load_noise();
+  params.print_and_load_state();
+  params.print_and_load_trackers();
+}
 
+void VioManager::start() {
+
+  this->state_machine_set_state(VioStateMachine::STARTED);
   // Nice startup message
   PRINT_DEBUG("=======================================\n");
   PRINT_DEBUG("OPENVINS ON-MANIFOLD EKF IS STARTING\n");
   PRINT_DEBUG("=======================================\n");
 
   // Nice debug
-  this->params = params_;
-  params.print_and_load_estimator();
-  params.print_and_load_noise();
-  params.print_and_load_state();
-  params.print_and_load_trackers();
 
   // This will globally set the thread count we will use
   // -1 will reset to the system default threading (usually the num of cores)

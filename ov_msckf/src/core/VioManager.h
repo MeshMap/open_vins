@@ -68,6 +68,8 @@ public:
    */
   VioManager(VioManagerOptions &params_);
 
+  void start();
+
   /**
    * @brief Feed function for inertial data
    * @param message Contains our timestamp and inertial information
@@ -136,7 +138,33 @@ public:
     feat_tracks_uvd = active_tracks_uvd;
   }
 
+  // State Machine
+  enum class VioStateMachine {
+    STOPPED_NOT_STARTED, // Node is spinning, vio has yet to start
+    STARTED,             // vio has been staged to start
+    STATIC_INIT,         // vio is now in static initialization
+    DYNAMIC_INIT,        // vio is now in dynamic initialization
+    TRACKING             // vio is running
+  };
+
+  
+  VioStateMachine state_machine_get_state() const { return vio_state_machine.load(); }
+  // this is dirty but we need to set_stage  
+  void state_machine_set_state(VioStateMachine state) { vio_state_machine.store(state); }
+
+  static std::string stage_to_string(VioStateMachine stage) {
+    switch (stage) {
+      case VioStateMachine::STOPPED_NOT_STARTED: return "STOPPED_NOT_STARTED";
+      case VioStateMachine::STARTED:       return "STARTED";
+      case VioStateMachine::STATIC_INIT:   return "STATIC_INIT";
+      case VioStateMachine::DYNAMIC_INIT:  return "DYNAMIC_INIT";
+      case VioStateMachine::TRACKING:      return "TRACKING";
+      default:                      return "UNKNOWN";
+    }
+  }
+
 protected:
+  std::atomic<VioStateMachine> vio_state_machine{VioStateMachine::STOPPED_NOT_STARTED};
   /**
    * @brief Given a new set of camera images, this will track them.
    *

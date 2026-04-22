@@ -147,17 +147,57 @@ ROS2Visualizer::ROS2Visualizer(std::shared_ptr<rclcpp::Node> node, std::shared_p
     }
   }
 
-  // Start thread for the image publishing
-  if (_app->get_params().use_multi_threading_pubs) {
-    std::thread thread([&] {
-      rclcpp::Rate loop_rate(20);
-      while (rclcpp::ok()) {
-        publish_images();
-        loop_rate.sleep();
-      }
-    });
-    thread.detach();
+  // Services
+  srv_start_ = _node->create_service<std_srvs::srv::Trigger>(
+      "~/ov_msckf_start",
+      std::bind(&ROS2Visualizer::callback_start_srv, this, std::placeholders::_1, std::placeholders::_2));
+
+  // srv_stop_ = _node->create_service<std_srvs::srv::Trigger>(
+  //     "~/stop",
+  //     std::bind(&ROS2Visualizer::callback_stop_srv, this, std::placeholders::_1, std::placeholders::_2));
+
+  // srv_reset_ = _node->create_service<std_srvs::srv::Trigger>(
+  //     "~/reset",
+  //     std::bind(&ROS2Visualizer::callback_reset_srv, this, std::placeholders::_1, std::placeholders::_2));
+
+  // here we can loop until we get triggered to start _app
+  // _app->start();
+
+
+  // // Start thread for the image publishing
+  // if (_app->get_params().use_multi_threading_pubs) {
+  //   std::thread thread([&] {
+  //     rclcpp::Rate loop_rate(20);
+  //     while (rclcpp::ok()) {
+  //       publish_images();
+  //       loop_rate.sleep();
+  //     }
+  //   });
+  //   thread.detach();
+  // }
+}
+
+void ROS2Visualizer::callback_start_srv(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+
+  std::lock_guard<std::mutex> lock(app_control_mtx_);
+
+  if (app_running_) {
+    response->success = true;
+    response->message = "VIO already running";
+    return;
   }
+
+  if (!app_started_once_) {
+    _app->start();
+    app_started_once_ = true;
+  }
+
+  app_running_ = true;
+  response->success = true;
+  response->message = "VIO started";
+  PRINT_INFO("ROS2Visualizer: received start service\n");
 }
 
 void ROS2Visualizer::setup_subscribers(std::shared_ptr<ov_core::YamlParser> parser) {
@@ -437,6 +477,9 @@ void ROS2Visualizer::visualize_final() {
 
 void ROS2Visualizer::callback_inertial(const sensor_msgs::msg::Imu::SharedPtr msg) {
 
+  if (!app_running_) {
+    return;
+  }
   // convert into correct format
   ov_core::ImuData message;
   message.timestamp = msg->header.stamp.sec + msg->header.stamp.nanosec * 1e-9;
@@ -497,6 +540,9 @@ void ROS2Visualizer::callback_inertial(const sensor_msgs::msg::Imu::SharedPtr ms
 
 void ROS2Visualizer::callback_monocular(const sensor_msgs::msg::Image::SharedPtr msg0, int cam_id0) {
 
+  if (!app_running_) {
+    return;
+  }
   // Check if we should drop this image
   double timestamp = msg0->header.stamp.sec + msg0->header.stamp.nanosec * 1e-9;
   double time_delta = 1.0 / _app->get_params().track_frequency;
@@ -537,6 +583,9 @@ void ROS2Visualizer::callback_monocular(const sensor_msgs::msg::Image::SharedPtr
 void ROS2Visualizer::callback_stereo(const sensor_msgs::msg::Image::ConstSharedPtr msg0, const sensor_msgs::msg::Image::ConstSharedPtr msg1,
                                      int cam_id0, int cam_id1) {
 
+  if (!app_running_) {
+    return;
+  }
   // Check if we should drop this image
   double timestamp = msg0->header.stamp.sec + msg0->header.stamp.nanosec * 1e-9;
   double time_delta = 1.0 / _app->get_params().track_frequency;
