@@ -40,7 +40,7 @@ list(APPEND LIBRARY_SOURCES
 file(GLOB_RECURSE LIBRARY_HEADERS "src/*.h")
 add_library(ov_eval_lib SHARED ${LIBRARY_SOURCES} ${LIBRARY_HEADERS})
 ament_target_dependencies(ov_eval_lib rclcpp ov_core)
-target_link_libraries(ov_eval_lib ${thirdparty_libraries})
+target_link_libraries(ov_eval_lib Eigen3::Eigen ${thirdparty_libraries})
 target_include_directories(ov_eval_lib PUBLIC src/)
 install(TARGETS ov_eval_lib
         LIBRARY DESTINATION lib
